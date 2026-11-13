@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.0
+- **padbridge is now octet**: a name of its own for a payload built around the 8BitDo Ultimate 2C and the 8BitDo
+  USB Wireless Adapter 2. The payloads are `octet-<version>.elf` and `octet-probe.elf`, notifications read "octet by
+  Sub", and its files live in `/data/octet`. On its first start it asks a running padbridge (or pad2c) to stop and
+  moves `/data/padbridge` (or `/data/pad2c`) there, remembered users, settings and log included. Nothing else
+  changes: the same controllers work as in padbridge 1.3.1.
+- README: the description leads with the two 8BitDo devices; the other controllers stay supported as before.
+
 ## 1.3.1
 - **Rest mode no longer stops padbridge.** It used to stop before rest mode (as AnyPad PS5 did), and since an
   autoload list only runs at a cold start, after waking the console had no padbridge: a 2C dongle in XInput mode then

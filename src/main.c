@@ -1,4 +1,4 @@
-/* padbridge -- USB controllers as virtual DualSense pads on a jailbroken PS5:
+/* octet -- USB controllers as virtual DualSense pads on a jailbroken PS5:
  * the 8BitDo Ultimate 2C 2.4G dongle, the 8BitDo USB Wireless Adapter 2 (and
  * whatever Bluetooth controller is paired with it) and wired XInput pads,
  * up to four at once. The console's Bluetooth is never involved.
@@ -14,10 +14,11 @@
  * "Turn off" from the console's menu removes the virtual pad, as a DualSense
  * disconnects; Home (PS) brings it back, as it switches a DualSense on.
  *
- * Stop: create /data/padbridge/stop. In rest mode it lets the controllers go
+ * Stop: create /data/octet/stop. In rest mode it lets the controllers go
  * and waits; when the console wakes, it looks for them again.
- * Log: /data/padbridge/padbridge.log
- * Up to 1.1.0 this was pad2c, in /data/pad2c: moved here on the first start.
+ * Log: /data/octet/octet.log
+ * Up to 1.3.1 this was padbridge, in /data/padbridge, and up to 1.1.0 pad2c,
+ * in /data/pad2c: moved here on the first start.
  */
 #include "host.h"
 #include "lock.h"
@@ -39,12 +40,11 @@
 #include <string.h>
 #include <unistd.h>
 
-#define STATE_DIR  "/data/padbridge"
-#define LOG_PATH   STATE_DIR "/padbridge.log"
-#define LOCK_PATH  STATE_DIR "/padbridge.lock"
+#define STATE_DIR  "/data/octet"
+#define LOG_PATH   STATE_DIR "/octet.log"
+#define LOCK_PATH  STATE_DIR "/octet.lock"
 #define STOP_FLAG  STATE_DIR "/stop"
 #define CONFIG_PATH STATE_DIR "/config"
-#define OLD_DIR    "/data/pad2c"         /* 1.1.0 and before */
 #define T_SCAN     100          /* ms between looks for new pads (the USB Wireless Adapter 2 shows
                                    its XInput identity for under a second) */
 #define T_RESEND   50           /* ms: the last state is sent again at least this often */
@@ -198,28 +198,61 @@ static void ctl_poll(int slot, long now)
     }
 }
 
-/* Up to 1.1.0 this was pad2c. A pad2c still running (from an autoload list)
- * is asked to stop, so that two do not read the same pads, and its state
- * (remembered users, settings, log) moves here once. Returns what to log. */
-static const char *from_pad2c(void)
-{
-    struct stat sb;
-    int i, asked = 0;
+/* Earlier names: padbridge (1.2.0 to 1.3.1), pad2c (up to 1.1.0). Newest first:
+ * its state is the one moved when both are there. */
+static const char *const OLD_NAMES[] = { "padbridge", "pad2c" };
+#define N_OLD (sizeof OLD_NAMES / sizeof OLD_NAMES[0])
 
-    if (stat(OLD_DIR, &sb) != 0) return NULL;
-    if (lock_held(OLD_DIR "/pad2c.lock")) {
-        FILE *f = fopen(OLD_DIR "/stop", "w");
-        if (f) fclose(f);
-        for (i = 0; i < 50 && lock_held(OLD_DIR "/pad2c.lock"); i++) usleep(100000);
-        asked = 1;
+/* An earlier copy still running (from an autoload list) is asked to stop, so
+ * that two do not read the same pads, and the newest earlier state
+ * (remembered users, settings, log) moves here once. Returns what to log. */
+static char g_moved[200];
+
+/* Adds "<name><what>" to g_moved, "; " between entries. */
+static void moved_say(const char *name, const char *what)
+{
+    size_t len = strlen(g_moved);
+    snprintf(g_moved + len, sizeof g_moved - len, "%s%s%s", len ? "; " : "", name, what);
+}
+
+static const char *from_old_names(void)
+{
+    char dir[32], lock[64], path[64], to[64];
+    struct stat sb;
+    size_t n;
+    int i, moved = 0;
+
+    g_moved[0] = '\0';
+    for (n = 0; n < N_OLD; n++) {
+        const char *name = OLD_NAMES[n];
+
+        snprintf(dir, sizeof dir, "/data/%s", name);
+        if (stat(dir, &sb) != 0) continue;
+        snprintf(lock, sizeof lock, "%s/%s.lock", dir, name);
+        if (lock_held(lock)) {
+            FILE *f;
+            snprintf(path, sizeof path, "%s/stop", dir);
+            if ((f = fopen(path, "w"))) fclose(f);
+            for (i = 0; i < 50 && lock_held(lock); i++) usleep(100000);
+            moved_say(name, " was running: asked to stop");
+        }
+        if (moved || stat(STATE_DIR, &sb) == 0) continue;
+        if (rename(dir, STATE_DIR) != 0) {
+            moved_say(name, "'s state could not be moved here");
+            continue;
+        }
+        moved = 1;
+        snprintf(path, sizeof path, STATE_DIR "/%s.lock", name);
+        unlink(path);
+        unlink(STOP_FLAG);
+        snprintf(path, sizeof path, STATE_DIR "/%s.log", name);
+        rename(path, LOG_PATH);
+        snprintf(path, sizeof path, STATE_DIR "/%s.log.1", name);
+        snprintf(to, sizeof to, "%s.1", LOG_PATH);
+        rename(path, to);
+        moved_say(name, "'s state moved here");
     }
-    if (stat(STATE_DIR, &sb) == 0) return asked ? "pad2c was running: asked to stop" : NULL;
-    if (rename(OLD_DIR, STATE_DIR) != 0) return "pad2c's state could not be moved here";
-    unlink(STATE_DIR "/pad2c.lock");
-    unlink(STATE_DIR "/stop");
-    rename(STATE_DIR "/pad2c.log", STATE_DIR "/padbridge.log");
-    rename(STATE_DIR "/pad2c.log.1", STATE_DIR "/padbridge.log.1");
-    return asked ? "pad2c was running: stopped, and its state moved here" : "pad2c's state moved here";
+    return g_moved[0] ? g_moved : NULL;
 }
 
 /* Every virtual pad removed, no pad left rumbling, every USB pad closed. */
@@ -268,10 +301,10 @@ int main(void)
     long last_scan = -T_SCAN, last_power = 0, last_check = 0;
     int i;
 
-    moved = from_pad2c();
+    moved = from_old_names();
     mkdir(STATE_DIR, 0777);
     log_open(LOG_PATH);
-    log_line("padbridge %s", PADBRIDGE_VERSION);
+    log_line("octet %s", OCTET_VERSION);
     if (moved) log_line("%s", moved);
     if (!lock_take(LOCK_PATH)) {
         log_line("another instance is running");
@@ -280,7 +313,7 @@ int main(void)
         return 1;
     }
     unlink(STOP_FLAG);
-    syscall(SYS_thr_set_name, -1, "padbridge");
+    syscall(SYS_thr_set_name, -1, "octet");
     signal(SIGTERM, on_signal);
     signal(SIGINT, on_signal);
     signal(SIGHUP, on_signal);
@@ -297,9 +330,9 @@ int main(void)
     {
         char ip[32];
         if (web_start(WEB_PORT) && web_local_ip(ip, sizeof ip))
-            notify("Version %s running\nSettings: http://%s:%d", PADBRIDGE_VERSION, ip, WEB_PORT);
+            notify("Version %s running\nSettings: http://%s:%d", OCTET_VERSION, ip, WEB_PORT);
         else
-            notify("Version %s running\nSwitch the controller on with its dongle plugged in", PADBRIDGE_VERSION);
+            notify("Version %s running\nSwitch the controller on with its dongle plugged in", OCTET_VERSION);
     }
     for (i = 0; i < HOST_MAX_PADS; i++) pad_state_reset(&g_ctl[i].st);
 
@@ -353,7 +386,7 @@ int main(void)
             int ps = power_state();
             last_power = now;
             if (ps == POWER_GOING_TO_REST || ps == POWER_IN_REST) {
-                /* Rest mode: the pads are let go and padbridge waits, so that
+                /* Rest mode: the pads are let go and octet waits, so that
                  * it is there again when the console wakes (an autoload list
                  * only runs at a cold start). */
                 log_line("rest mode: controllers let go, waiting for the console to wake");

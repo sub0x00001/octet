@@ -1,4 +1,4 @@
-/* padbridge's settings page, http://<console>:8090 from any browser on the local
+/* octet's settings page, http://<console>:8090 from any browser on the local
  * network (phone, computer, the console's own).
  *
  *   GET  /                      the page
@@ -7,8 +7,8 @@
  *
  * Never blocks: web_poll() takes what has arrived and answers what is
  * complete, so a slow browser does not delay the pads. */
-#ifndef PADBRIDGE_WEB_H
-#define PADBRIDGE_WEB_H
+#ifndef OCTET_WEB_H
+#define OCTET_WEB_H
 
 #include "pad.h"
 

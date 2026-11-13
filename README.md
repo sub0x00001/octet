@@ -1,23 +1,26 @@
-# padbridge
+# octet
 
-**Use controllers the PS5 does not accept, on a jailbroken PS5, as extra DualSense controllers.**
+**The 8BitDo Ultimate 2C and the 8BitDo USB Wireless Adapter 2 on a jailbroken PS5, as extra DualSense
+controllers.**
 
-padbridge is a payload for a jailbroken PS5. It reads USB controllers and receivers plugged into the console and
-shows each controller to the system and to games as a **virtual DualSense**, up to four at once, next to your own
-DualSense:
+octet is a payload for a jailbroken PS5, built around two 8BitDo devices:
 
-- the **8BitDo Ultimate 2C Wireless** through its 2.4G dongle;
-- almost **any Bluetooth controller** (DualSense, DualShock 4, Xbox, Switch Pro, 8BitDo, GameSir...) through the
-  **8BitDo USB Wireless Adapter 2**;
-- **wired XInput (Xbox 360) controllers** on a USB cable.
+- the **8BitDo Ultimate 2C Wireless** on its 2.4G dongle (DInput and XInput modes, vibration in PS4 games);
+- the **8BitDo USB Wireless Adapter 2**, and through it almost **any Bluetooth controller** (DualSense, DualShock 4,
+  Xbox, Switch Pro, 8BitDo, GameSir...).
+
+Plugged into the console, each controller shows up to the system and to games as a **virtual DualSense**, up to four
+at once, next to your own DualSense. Beyond the 8BitDo devices, it also takes **wired XInput (Xbox 360)
+controllers** and a **Switch Pro Controller** on a USB cable.
 
 The console's own Bluetooth is never touched, so your DualSense stays paired. A **settings page**, opened from a
 phone or a computer, shows each controller live and lets you fix controllers with the Nintendo button layout.
 
-Up to 1.1.0 the project was called **pad2c**; see [Upgrading from pad2c](#upgrading-from-pad2c).
+octet was called **padbridge** up to 1.3.1 and **pad2c** up to 1.1.0; see [Upgrading from padbridge or
+pad2c](#upgrading-from-padbridge-or-pad2c). octet is not affiliated with 8BitDo or Sony.
 
 <p align="center">
-  <img src="docs/images/settings-page.png" width="70%" alt="The padbridge settings page: the Ultimate 2C waiting on its dongle, and a controller connected through the USB Wireless Adapter 2 with the Nintendo layout on">
+  <img src="docs/images/settings-page.png" width="70%" alt="The octet settings page: the Ultimate 2C waiting on its dongle, and a controller connected through the USB Wireless Adapter 2 with the Nintendo layout on">
 </p>
 <p align="center"><em>The settings page: the Ultimate 2C on its dongle, and a GameSir G8 through the USB Wireless
 Adapter 2 with the Nintendo layout on.</em></p>
@@ -54,7 +57,7 @@ them for its own turbo and mapping settings.
 
 ### Vibration
 
-**PS4 games** rumble the controller (tested: Crash Bandicoot N. Sane Trilogy). padbridge reads what the game asks of
+**PS4 games** rumble the controller (tested: Crash Bandicoot N. Sane Trilogy). octet reads what the game asks of
 the virtual DualSense (`scePadVirtualDeviceGetRemoteSetting`: the large and small motors, as on a DualShock 4) and
 sends it on:
 
@@ -74,19 +77,19 @@ Vibration in PS5 games, light bar, motion sensors, audio.
 ## Install
 
 1. Plug the dongle, the adapter or the controller's cable into a USB port of the PS5.
-2. Send `padbridge-<version>.elf` to your payload loader (elfldr listens on port 9021), or add it to Payload
+2. Send `octet-<version>.elf` to your payload loader (elfldr listens on port 9021), or add it to Payload
    Manager and to its autoload list, so that it starts with the console.
 3. A notification says it is running, with the address of the settings page.
 4. Switch the controller on and press **Home** (or PS): the console asks who is using it. For a second player, pick a
-   **second user** (a game takes one controller per user). padbridge remembers the choice per controller and gives
+   **second user** (a game takes one controller per user). octet remembers the choice per controller and gives
    it back to that user next time, as a DualSense does.
 
-It needs a console that already runs a payload loader; padbridge does not jailbreak anything itself.
+It needs a console that already runs a payload loader; octet does not jailbreak anything itself.
 
 ## Settings page
 
 Open **http://&lt;console IP&gt;:8090** in a browser on the same network (phone, computer, the console's own); the
-address is in the notification when padbridge starts. For each controller:
+address is in the notification when octet starts. For each controller:
 
 - its name, mode (DInput or XInput), slot and the user it is given to;
 - **Nintendo layout**: A/B and X/Y swapped, applied at once and kept, for controllers that send the Nintendo layout
@@ -98,7 +101,7 @@ it holds for whatever controller is paired with it.
 
 ## The 8BitDo USB Wireless Adapter 2
 
-The adapter shows a different USB identity for each mode and picks its mode from the host it sees. padbridge answers
+The adapter shows a different USB identity for each mode and picks its mode from the host it sees. octet answers
 it as Windows does, so it settles in **XInput** by itself, and hides the keyboard and mouse the adapter adds in that
 mode, so the console's Accessories list shows only the controller.
 
@@ -108,7 +111,7 @@ mode, so the console's Accessories list shows only the controller.
 | DInput (`2dc8:3105`) | hold **View + Left** (Create + Left on a DualSense) for 3 s; the light blinks twice | passes a DualSense's touchpad click |
 | Switch (`057e:2009`, a Switch Pro Controller) | hold **- + L** (View + LB) for 3 s; the light blinks twice | **vibration for Switch-type controllers** (the adapter passes it on only in this mode); Capture as the touchpad; buttons by position, so a pad that sends them by label (GameSir G8) needs Nintendo layout |
 | back to automatic | hold the adapter's button until its light goes off, then pair the controller again | |
-| DualShock 4 (`054c:05c4`) | where it ends on a PS5 without padbridge's answer | does not work: it stops sending after a moment |
+| DualShock 4 (`054c:05c4`) | where it ends on a PS5 without octet's answer | does not work: it stops sending after a moment |
 
 Pairing a DualSense with the adapter unpairs it from the console: plug it into the console with its cable and press
 PS to pair it back. The adapter takes one controller at a time.
@@ -127,7 +130,7 @@ mode. It then works in both of the adapter's modes, with two things to know:
   which a Switch reads as the right one), not by position. A genuine Switch Pro Controller needs no setting.
 - **Weak rumble:** simple rumble motors like the G8's do not move below a certain strength, and the Switch format
   splits rumble into a low and a high band, of which such pads feel mostly the low one. In the Switch mode,
-  padbridge sends the stronger motor to the low band and starts any rumble at about 40%, so a light request (Crash
+  octet sends the stronger motor to the low band and starts any rumble at about 40%, so a light request (Crash
   Bandicoot's spin asks 25%) is still felt.
 - The setting is kept per card, so the G8 and a DualSense can share the adapter: the DualSense uses the adapter's
   XInput mode, without Nintendo layout.
@@ -156,46 +159,50 @@ The controller keeps the last mode chosen. With the controller on:
 
 - "Turn off" in the console's menu disconnects the controller from the console, as with a DualSense, and Home
   connects it again. The controller itself stays on until it goes to sleep by itself.
-- Every notification reads "padbridge by Sub", then the controller, its mode and what happened.
-- On XInput controllers, View or Menu pressed alone reaches the console 60 ms late: padbridge waits that long for
+- Every notification reads "octet by Sub", then the controller, its mode and what happened.
+- On XInput controllers, View or Menu pressed alone reaches the console 60 ms late: octet waits that long for
   the other one, so that View + Menu (the touchpad) does not open the Create menu on the way.
 
 ## Files
 
-All in `/data/padbridge/` on the console:
+All in `/data/octet/` on the console:
 
 | File | |
 |---|---|
-| `padbridge.log` | the log |
-| `stop` | create it to stop padbridge (in rest mode it lets the controllers go and waits; it picks them up again when the console wakes) |
+| `octet.log` | the log |
+| `stop` | create it to stop octet (in rest mode it lets the controllers go and waits; it picks them up again when the console wakes) |
 | `owner`, `owner.1`... | the user the controller in each slot was last given to (delete to forget) |
 | `config` | the settings page's choices (`swap <controller name>` for Nintendo layout) |
 | `bind_user` | optional: `main`, `other` or a hexadecimal user id, to give controllers to that user at once |
 
-## Upgrading from pad2c
+## Upgrading from padbridge or pad2c
 
-padbridge 1.2.0 is pad2c renamed. On its first start it asks a running pad2c to stop and moves `/data/pad2c` to
-`/data/padbridge`, remembered users and settings included. Replace `pad2c-<version>.elf` with
-`padbridge-<version>.elf` in Payload Manager's autoload list.
+octet 2.0.0 is padbridge renamed, and padbridge 1.2.0 was pad2c renamed: same payload, same controllers, a name of
+its own. On its first start octet asks a running padbridge or pad2c to stop and moves its folder (`/data/padbridge`,
+or `/data/pad2c` on an older install) to `/data/octet`, remembered users, settings and log included. Then, in Payload
+Manager's autoload list, replace `padbridge-<version>.elf` (or `pad2c-<version>.elf`) with `octet-<version>.elf`.
+
+The probe is now `octet-probe.elf` and writes `/data/octet/probe.log`; notifications read "octet by Sub". The
+GitHub repository moved too; the old address redirects to the new one.
 
 ## FAQ
 
 **Can I use a non-Sony controller on a PS5?** Not on a stock PS5: it only accepts its own and a few licensed
-controllers. On a jailbroken PS5, padbridge makes them appear as DualSense controllers.
+controllers. On a jailbroken PS5, octet makes them appear as DualSense controllers.
 
 **Does it work in games, or only in the menus?** In games too. Give each controller its own console user (the console
 asks when you press Home) and it is player 2, 3 or 4, like another DualSense.
 
-**Do I lose my DualSense?** No. Both work at the same time; padbridge does not use the console's Bluetooth. (Pairing
+**Do I lose my DualSense?** No. Both work at the same time; octet does not use the console's Bluetooth. (Pairing
 the DualSense itself with the USB Wireless Adapter 2 is your choice; see above.)
 
 **A/B and X/Y are swapped on my controller.** Tick **Nintendo layout** for it on the settings page.
 
-**My controller does nothing.** `/data/padbridge/padbridge.log` lists every USB device plugged in that padbridge does
+**My controller does nothing.** `/data/octet/octet.log` lists every USB device plugged in that octet does
 not read, with its id and name: a controller in another mode (Switch, DS4) shows up there.
 
-**My controller is not listed.** Run `padbridge-probe.elf` with it plugged in and open an issue with
-`/data/padbridge/probe.log` (the issue template says what to include).
+**My controller is not listed.** Run `octet-probe.elf` with it plugged in and open an issue with
+`/data/octet/probe.log` (the issue template says what to include).
 
 ## How it works
 
@@ -229,7 +236,7 @@ Needs [ps5-payload-sdk](https://github.com/ps5-payload-dev/sdk) and clang, lld a
 ```
 . ~/.ps5sdk
 make test     # button maps, interface choice, settings, status JSON, on the PC
-make          # dist/padbridge-<version>.elf and dist/padbridge-probe.elf
+make          # dist/octet-<version>.elf and dist/octet-probe.elf
 ```
 
 ## Credits
@@ -247,5 +254,5 @@ make          # dist/padbridge-<version>.elf and dist/padbridge-probe.elf
 
 GPL-3.0-or-later. See [LICENSE](LICENSE).
 
-No Sony code, keys or firmware are part of this project. padbridge does not jailbreak anything: it needs a console
+No Sony code, keys or firmware are part of this project. octet does not jailbreak anything: it needs a console
 that already runs a payload loader.
