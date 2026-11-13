@@ -9,8 +9,8 @@
  *   [6..8] left stick, [9..11] right stick: two 12-bit values each, y grows upwards
  * Placed by position, as on a DualSense: B cross, A circle, Y square, X triangle;
  * Capture is the touchpad. */
-#ifndef PADBRIDGE_MAPSWITCH_H
-#define PADBRIDGE_MAPSWITCH_H
+#ifndef OCTET_MAPSWITCH_H
+#define OCTET_MAPSWITCH_H
 
 #include "pad.h"
 

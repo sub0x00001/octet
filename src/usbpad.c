@@ -421,7 +421,7 @@ usbpad *usbpad_open(void)
             /* Logged once per device: what is plugged in and not read, to
              * tell why a controller does nothing (another mode, say). */
             if (not_pad && strcmp(g_logged[bus][addr], g_reject) != 0) {
-                log_line("usb: %s %s: not read by padbridge", path, g_reject);
+                log_line("usb: %s %s: not read by octet", path, g_reject);
                 snprintf(g_logged[bus][addr], sizeof g_logged[bus][addr], "%s", g_reject);
             }
             g_not_pad[bus][addr].set = (unsigned char)not_pad;

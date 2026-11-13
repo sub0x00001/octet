@@ -112,18 +112,18 @@ typedef struct {
     pad_state last;             /* the pad's latest state, resent while PS is held from the menu */
     long ps_until;              /* ms; PS is added to the frames until then (0: not held) */
     int ps_active;              /* a frame with PS went out and the release is still to be sent */
-    int sys_off;                /* padbridge: the system removed it or it refused input ("turned off") */
+    int sys_off;                /* octet: the system removed it or it refused input ("turned off") */
 } vslot;
 
 static mbus_bind_fn g_bind;
 static int g_ready;                         /* vpad_init succeeded */
 static int32_t g_user = -1;
 
-/* padbridge: the user the pad was last given to, from the console's own choice
+/* octet: the user the pad was last given to, from the console's own choice
  * (the "who is using this controller" screen) as the kernel log tells it.
- * Kept in /data/padbridge/owner, so the pad goes back to that user next time, as
+ * Kept in /data/octet/owner, so the pad goes back to that user next time, as
  * a DualSense does. -1: none yet. */
-#define OWNER_PATH "/data/padbridge/owner"     /* slot 0; slot n: owner.n */
+#define OWNER_PATH "/data/octet/owner"     /* slot 0; slot n: owner.n */
 static int32_t g_owner[HOST_MAX_PADS] = { -1, -1, -1, -1 };
 
 static void owner_path(int slot, char *out, size_t size)
@@ -194,8 +194,8 @@ static size_t g_line_len;
 
 void notify(const char *fmt, ...)
 {
-    /* Every notification: "padbridge by <author>", then what happened. */
-    static const char head[] = "padbridge by " PADBRIDGE_AUTHOR "\n";
+    /* Every notification: "octet by <author>", then what happened. */
+    static const char head[] = "octet by " OCTET_AUTHOR "\n";
     notify_request req;
     va_list ap;
 
@@ -283,7 +283,7 @@ static uint64_t virtual_device_in(const char *line)
     return hex_after(line, "DeviceId");
 }
 
-/* padbridge: the source is kept open for as long as the payload runs, so what the
+/* octet: the source is kept open for as long as the payload runs, so what the
  * system does with our pads is seen. Whatever it held before is old news, and
  * an old DEVICE_ADDED line must never be taken for ours: drop it all. */
 static void log_source_drain(void)
@@ -297,7 +297,7 @@ static void log_source_drain(void)
     log_line("vpad: kernel log open (%s), %ld old bytes skipped", g_log_is_dev ? "/dev/klog" : "server on 3232", total);
 }
 
-/* padbridge: lines about one of our live pads. The console's choice of user for
+/* octet: lines about one of our live pads. The console's choice of user for
  * it is remembered; its removal by the system (not by us: our own removals
  * forget the device first) is the console turning the pad off. Everything
  * else said about it is logged, to learn what the console asks of it. */
@@ -397,12 +397,12 @@ int32_t vpad_choose_user(const int32_t login[4], int32_t init, int32_t fore, con
     return -1;
 }
 
-/* padbridge: whether /data/padbridge/bind_user asks to bind the pad to a user
+/* octet: whether /data/octet/bind_user asks to bind the pad to a user
  * ("main" for the default choice, "other", or a hexadecimal id). */
 static int bind_wanted(void)
 {
     char want[40] = "";
-    FILE *f = fopen("/data/padbridge/bind_user", "r");
+    FILE *f = fopen("/data/octet/bind_user", "r");
 
     if (!f) return 0;
     if (!fgets(want, sizeof want, f)) want[0] = '\0';
@@ -421,7 +421,7 @@ static int32_t main_user(void)
     if (sceUserServiceGetLoginUserIdList(login) != 0) login[0] = login[1] = login[2] = login[3] = -1;
     if (sceUserServiceGetInitialUser(&init) != 0) init = -1;
     if (sceUserServiceGetForegroundUser(&fore) != 0) fore = -1;
-    if ((f = fopen("/data/padbridge/bind_user", "r"))) {
+    if ((f = fopen("/data/octet/bind_user", "r"))) {
         if (fgets(want, sizeof want, f)) {
             for (i = 0; want[i]; i++) if (want[i] == '\n' || want[i] == '\r' || want[i] == ' ') want[i] = 0;
             if (strncmp(want, "0x", 2) == 0) memmove(want, want + 2, strlen(want + 2) + 1);
@@ -565,7 +565,7 @@ void vpad_shutdown(void)
     log_source_close();
 }
 
-/* padbridge: what the console asks of the slot's virtual pad (rumble, light
+/* octet: what the console asks of the slot's virtual pad (rumble, light
  * bar), as scePadVirtualDeviceGetRemoteSetting returns it: close to a
  * DualShock 4 output report, [0] update flag, [3] large motor, [4] small
  * motor, [5..7] light bar, [56] a user is assigned (seen on PS5 13.60, as
@@ -666,9 +666,9 @@ static void finish_identification(long now)
         memset(v, 0, sizeof *v);
         return;
     }
-    /* padbridge: the user, as a DualSense does it: back to the user who last used
+    /* octet: the user, as a DualSense does it: back to the user who last used
      * it, if signed in; otherwise nobody, and the console asks who uses it
-     * when its PS (Home) button is pressed. /data/padbridge/bind_user = main,
+     * when its PS (Home) button is pressed. /data/octet/bind_user = main,
      * other or a hexadecimal id binds it to that user instead. */
     {
         int32_t to = -1;
@@ -693,7 +693,7 @@ void vpad_poll(long now)
 
     if (!g_ready) return;
     ps_tick(now);
-    log_source_read();                  /* padbridge: always, to follow what the console does with our pads */
+    log_source_read();                  /* octet: always, to follow what the console does with our pads */
     if (g_pending >= 0) {
         finish_identification(now);
         return;
@@ -754,7 +754,7 @@ static void send_frame(int slot, const pad_state *st)
     if (scePadVirtualDeviceInsertData(g_slot[slot].handle, &d) != 0) {
         /* Stop feeding a device that refuses: it may not be ours any more. */
         log_line("slot %d: the virtual pad refused input, stopped feeding it", slot);
-        g_slot[slot].sys_off = 1;       /* padbridge: as if turned off; Home brings a new one */
+        g_slot[slot].sys_off = 1;       /* octet: as if turned off; Home brings a new one */
     }
 }
 

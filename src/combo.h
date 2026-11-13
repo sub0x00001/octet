@@ -9,8 +9,8 @@
  * longer, or with the other one late, they go through as they are; a tap
  * shorter than the window is sent when it ends, for COMBO_TAP_MS. Once the
  * touchpad is on, it stays until both are released. */
-#ifndef PADBRIDGE_COMBO_H
-#define PADBRIDGE_COMBO_H
+#ifndef OCTET_COMBO_H
+#define OCTET_COMBO_H
 
 #include "pad.h"
 

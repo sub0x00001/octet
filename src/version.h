@@ -1,7 +1,7 @@
-#ifndef PADBRIDGE_VERSION_H
-#define PADBRIDGE_VERSION_H
+#ifndef OCTET_VERSION_H
+#define OCTET_VERSION_H
 
-#define PADBRIDGE_VERSION "1.3.1"
-#define PADBRIDGE_AUTHOR  "Sub"        /* every notification starts "padbridge by Sub" */
+#define OCTET_VERSION "2.0.0"
+#define OCTET_AUTHOR  "Sub"        /* every notification starts "octet by Sub" */
 
 #endif

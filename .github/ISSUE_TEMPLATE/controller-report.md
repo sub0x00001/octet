@@ -1,6 +1,6 @@
 ---
 name: Controller report
-about: Tried padbridge with a controller (working or not), or want support for a new one
+about: Tried octet with a controller (working or not), or want support for a new one
 labels: controller
 ---
 
@@ -10,13 +10,13 @@ labels: controller
 
 **What happened** (works / partly / not detected):
 
-**padbridge log** (`/data/padbridge/padbridge.log`, the lines from the last start):
+**octet log** (`/data/octet/octet.log`, the lines from the last start):
 
 ```
 ```
 
-**For a controller that is not supported yet:** send `padbridge-probe.elf` with the controller plugged in, press every
-button one at a time while it runs, and paste `/data/padbridge/probe.log` here.
+**For a controller that is not supported yet:** send `octet-probe.elf` with the controller plugged in, press every
+button one at a time while it runs, and paste `/data/octet/probe.log` here.
 
 ```
 ```
