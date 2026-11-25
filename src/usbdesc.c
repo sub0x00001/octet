@@ -16,6 +16,12 @@ static int is_xinput(const iface *f)
     return f->cls == 0xFF && f->sub == 0x5D && f->proto == 0x01;
 }
 
+/* One controller of an Xbox 360 Wireless Receiver (ff/5d/82 beside it is its headset). */
+static int is_xinput_wireless(const iface *f)
+{
+    return f->cls == 0xFF && f->sub == 0x5D && f->proto == 0x81;
+}
+
 /* HID, but not a boot keyboard (1/1) or mouse (1/2). */
 static int is_boot_kbd_mouse(const iface *f)
 {
@@ -76,6 +82,8 @@ int usbdesc_choose(const unsigned char *cfg, int len, uint16_t vid, uint16_t pid
 
     for (i = 0; i < n; i++)
         if (is_xinput(&ifs[i]) && ifs[i].ep_in) return pick(ifs, n, &ifs[i], USBPAD_XINPUT, out);
+    for (i = 0; i < n; i++)
+        if (is_xinput_wireless(&ifs[i]) && ifs[i].ep_in) return pick(ifs, n, &ifs[i], USBPAD_XINPUT_WIRELESS, out);
     if (vid == 0x057E && pid == 0x2009)
         for (i = 0; i < n; i++)
             if (ifs[i].cls == 0x03 && ifs[i].ep_in) return pick(ifs, n, &ifs[i], USBPAD_SWITCH, out);
@@ -106,9 +114,11 @@ int usbdesc_string(const unsigned char *d, int len, char *out, size_t size)
 const char *usbdesc_known_name(uint16_t vid, uint16_t pid, const char *manufacturer)
 {
     static const char adapter2[] = "8BitDo USB Wireless Adapter 2";
+    static const char x360w[] = "Xbox 360 Wireless Receiver";
     int by_8bitdo = manufacturer && !strcmp(manufacturer, "8BitDo");
 
     if (vid == VID_8BITDO && (pid == 0x3105 || pid == 0x3106 || pid == 0x3107)) return adapter2;
     if (vid == 0x045E && pid == 0x028E && by_8bitdo) return adapter2;   /* its Xbox 360 identity */
+    if (vid == 0x045E && (pid == 0x0719 || pid == 0x0291 || pid == 0x02A9)) return x360w;
     return NULL;
 }

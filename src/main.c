@@ -1,7 +1,7 @@
 /* octet -- USB controllers as virtual DualSense pads on a jailbroken PS5:
  * the 8BitDo Ultimate 2C 2.4G dongle, the 8BitDo USB Wireless Adapter 2 (and
- * whatever Bluetooth controller is paired with it) and wired XInput pads,
- * up to four at once. The console's Bluetooth is never involved.
+ * whatever Bluetooth controller is paired with it), wired XInput pads, the
+ * Xbox 360 Wireless Receiver, up to four at once. The console's Bluetooth is never involved.
  *
  *   usbpad.c    each pad, read from its /dev/ugen node
  *   ps5_vpad.c  the virtual DualSense pads (from AnyPad PS5, GPL-3.0)

@@ -11,7 +11,8 @@ octet is a payload for a jailbroken PS5, built around two 8BitDo devices:
 
 Plugged into the console, each controller shows up to the system and to games as a **virtual DualSense**, up to four
 at once, next to your own DualSense. Beyond the 8BitDo devices, it also takes **wired XInput (Xbox 360)
-controllers** and a **Switch Pro Controller** on a USB cable.
+controllers**, the **Xbox 360 Wireless Receiver** (one controller or wheel) and a **Switch Pro Controller** on a USB
+cable.
 
 The console's own Bluetooth is never touched, so your DualSense stays paired. A **settings page**, opened from a
 phone or a computer, shows each controller live and lets you fix controllers with the Nintendo button layout.
@@ -54,6 +55,20 @@ not supported directly; it works through the USB Wireless Adapter 2.
 
 The Ultimate 2C's **Star** and **Mapping** buttons never reach the console, in either mode: the controller keeps
 them for its own turbo and mapping settings.
+
+### Xbox 360 Wireless Receiver
+
+The Xbox 360 Wireless Gaming Receiver for Windows (`045e:0719`) and its clones (`045e:02a9`, `045e:0291`). Plug it
+in, pair a controller with it (the receiver's button, then the controller's), switch the controller on: its first
+light comes on once octet has it.
+
+| Controller | Result |
+|---|---|
+| Xbox 360 Wireless Controller | expected to work, untested: please report |
+| Xbox 360 Wireless Racing Wheel | expected to work, untested: steering on the left stick, brake and gas on L2/R2 |
+
+Only the receiver's **first controller** is read, for now: a second one paired with the same receiver does nothing.
+The wheel's force feedback is not sent; the rumble of a pad is, as for wired XInput.
 
 ### Vibration
 
@@ -210,7 +225,7 @@ not read, with its id and name: a controller in another mode (Switch, DS4) shows
   its own virtual DualSense. New devices are looked for every 100 ms. The console's own HID driver holds the
   interface but ignores the device. The internal Bluetooth chip (`ugen0.2`) is never touched.
 - `src/usbdesc.c` picks the interface from the USB descriptor: XInput (`ff/5d/01`) from any vendor first, then an
-  Switch Pro Controller (`057e:2009`), then an 8BitDo HID interface, never a keyboard. `src/map8bitdo.c` (8BitDo
+  Xbox 360 Wireless Receiver's first controller (`ff/5d/81`), then a Switch Pro Controller (`057e:2009`), then an 8BitDo HID interface, never a keyboard. `src/map8bitdo.c` (8BitDo
   DInput report 1), `src/mapxinput.c` (Xbox 360 report) and `src/mapswitch.c` (Switch Pro report 0x30) turn the
   reports into DualSense buttons.
 - A Switch Pro Controller gets the USB handshake (80 02, 80 03, 80 02, 80 04) and its subcommands (full reports,
