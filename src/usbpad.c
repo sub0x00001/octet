@@ -56,7 +56,18 @@ struct usbpad {
     long rumble_at;                 /* ms: last rumble packet sent */
     switch_sticks swcal;            /* Switch Pro: stick centres and reach */
     unsigned char swcount;          /* Switch Pro: output packet number, 0..15 */
+    int present;                    /* 360 receiver: a controller is on it */
+    int led_pending;                /* 360 receiver: player 1's LED still to send */
 };
+
+/* Xbox 360 Wireless Receiver output, 12 bytes each, as Linux's xpad sends them:
+ *   08 00 0f c0 ..          which controller is there? (answered 08 80 or 08 00)
+ *   00 00 08 4n ..          LED pattern n: 6, player 1 on; until it comes the
+ *                           controller blinks all four, though it is paired
+ *   00 01 0f c0 00 L S ..   rumble, large and small motor */
+#define X360W_OUT 12
+static const unsigned char x360w_inquiry[X360W_OUT] = { 0x08, 0x00, 0x0F, 0xC0 };
+static const unsigned char x360w_led1[X360W_OUT] = { 0x00, 0x00, 0x08, 0x40 | 0x06 };
 
 static int dead_errno(int e)
 {
@@ -276,7 +287,7 @@ static void switch_setup(usbpad *u)
  * failure on the way, which is tried again). */
 static usbpad *try_node(int bus, int addr, int *not_pad)
 {
-    static const char *kinds[] = { "", "8BitDo HID (DInput)", "XInput", "Switch Pro" };
+    static const char *kinds[] = { "", "8BitDo HID (DInput)", "XInput", "Switch Pro", "Xbox 360 wireless" };
     struct usb_device_descriptor dd;
     struct usb_device_info di;
     struct usb_fs_init init;
@@ -305,7 +316,7 @@ static usbpad *try_node(int bus, int addr, int *not_pad)
     u->ep_in = pick.ep_in;
     u->mps = pick.mps_in;
     if (u->mps == 0 || u->mps > RD_MAX) u->mps = RD_MAX;
-    if ((u->kind == USBPAD_XINPUT || u->kind == USBPAD_SWITCH) && pick.ep_out) {
+    if ((u->kind == USBPAD_XINPUT || u->kind == USBPAD_XINPUT_WIRELESS || u->kind == USBPAD_SWITCH) && pick.ep_out) {
         u->ep_out = pick.ep_out;
         u->mps_out = pick.mps_out ? pick.mps_out : 32;
         if (u->mps_out > RD_MAX) u->mps_out = RD_MAX;
@@ -384,6 +395,11 @@ static usbpad *try_node(int bus, int addr, int *not_pad)
         log_line("usb: %s: XInput LED %s", u->path,
                  !u->ep_out ? "not sent (no OUT endpoint)" : send_out(u, led, 3) ? "set" : "not acknowledged");
     }
+    /* A controller already on the receiver said so before octet was there:
+     * asked again, it answers 08 80 (or 08 00 if there is none). */
+    if (u->kind == USBPAD_XINPUT_WIRELESS)
+        log_line("usb: %s: receiver asked for its controller: %s", u->path,
+                 !u->ep_out ? "no OUT endpoint" : send_out(u, x360w_inquiry, X360W_OUT) ? "ok" : "not acknowledged");
     g_held[bus][addr] = 1;
     return u;
 
@@ -440,7 +456,9 @@ const char *usbpad_name(const usbpad *u)
 const char *usbpad_mode(const usbpad *u)
 {
     if (!u) return "DInput";
-    return u->kind == USBPAD_XINPUT ? "XInput" : u->kind == USBPAD_SWITCH ? "Switch" : "DInput";
+    return u->kind == USBPAD_XINPUT || u->kind == USBPAD_XINPUT_WIRELESS ? "XInput"
+           : u->kind == USBPAD_SWITCH                                   ? "Switch"
+                                                                        : "DInput";
 }
 
 /* Starts an OUT transfer without waiting: its completion comes through
@@ -464,7 +482,8 @@ static int start_out(usbpad *u, const unsigned char *data, int n)
 
 int usbpad_can_rumble(const usbpad *u)
 {
-    return u && (u->kind == USBPAD_XINPUT || u->kind == USBPAD_SWITCH) && u->ep_out;
+    return u && (u->kind == USBPAD_XINPUT || u->kind == USBPAD_XINPUT_WIRELESS || u->kind == USBPAD_SWITCH) &&
+           u->ep_out;
 }
 
 void usbpad_rumble(usbpad *u, uint8_t large, uint8_t small)
@@ -478,6 +497,7 @@ void usbpad_rumble(usbpad *u, uint8_t large, uint8_t small)
 /* Rumble, sent when the OUT endpoint is free; a newer value waiting replaces
  * an older one.
  *   XInput:     00 08 00 <large> <small> 00 00 00
+ *   360 receiver: 00 01 0f c0 00 <large> <small> 00 00 00 00 00
  *   Switch Pro: report 0x10, packet number, 8 rumble bytes (mapswitch.c),
  *               sent again every 50 ms while on, as SDL does: the pad stops
  *               rumbling when it is not refreshed. */
@@ -497,6 +517,13 @@ static void rumble_flush(usbpad *u, long now)
         r[1] = u->swcount;
         switch_rumble_encode(u->rumble[0], u->rumble[1], r + 2);
         n = 64;
+    } else if (u->kind == USBPAD_XINPUT_WIRELESS) {
+        r[1] = 0x01;
+        r[2] = 0x0F;
+        r[3] = 0xC0;
+        r[5] = u->rumble[0];
+        r[6] = u->rumble[1];
+        n = X360W_OUT;
     } else {
         r[1] = 0x08;
         r[3] = u->rumble[0];
@@ -538,6 +565,27 @@ int usbpad_poll(usbpad *u, pad_state *st)
         if (i == EP_OUT) continue;
         if (u->ep[i].status) continue;              /* cancelled or stalled: read again */
         if (!u->ep[i].aFrames) continue;
+        if (u->kind == USBPAD_XINPUT_WIRELESS) {
+            int w = usbpad_parse_xinput_wireless(u->buf[i], (int)u->lenp[i][0], st);
+            if (w == XW_LEFT && u->present) {
+                /* Closed and opened again by the caller: the controller left,
+                 * the receiver waits for the next one. */
+                log_line("usb: %s: controller left the receiver", u->path);
+                return -1;
+            }
+            if ((w == XW_JOINED || w == XW_INPUT) && !u->present) {
+                u->present = 1;
+                u->led_pending = u->ep_out != 0;
+                log_line("usb: %s: controller on the receiver", u->path);
+            }
+            if (w != XW_INPUT) continue;
+            if (!u->logged_first) {
+                u->logged_first = 1;
+                log_line("usb: first controller report");
+            }
+            got = 1;
+            continue;
+        }
         if (u->kind == USBPAD_XINPUT ? usbpad_parse_xinput(u->buf[i], (int)u->lenp[i][0], st)
             : u->kind == USBPAD_SWITCH ? switch_parse(u->buf[i], (int)u->lenp[i][0], &u->swcal, st)
                                        : usbpad_parse_8bitdo(u->buf[i], (int)u->lenp[i][0], st)) {
@@ -547,6 +595,10 @@ int usbpad_poll(usbpad *u, pad_state *st)
             }
             got = 1;
         }
+    }
+    if (u->led_pending && !u->busy[EP_OUT] && start_out(u, x360w_led1, X360W_OUT)) {
+        u->led_pending = 0;
+        log_line("usb: %s: receiver LED set (player 1)", u->path);
     }
     rumble_flush(u, now);
     /* A re-enumeration does not always fail the pending reads at once.

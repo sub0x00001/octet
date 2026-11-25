@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.1.0
+- **Xbox 360 Wireless Receiver** (issue #10): the Microsoft receiver for Windows (`045e:0719`) and its clones
+  (`045e:02a9`, `045e:0291`), with an Xbox 360 Wireless Controller or the Xbox 360 Wireless Racing Wheel on it. The
+  receiver's controllers sit on vendor interfaces `ff/5d/81`, which octet passed over. Now it reads the first one: it
+  asks the receiver which controller is there, sets player 1's light (until then a paired controller blinks all four,
+  as if it were not paired), reads its reports (the wired XInput report, 4 bytes on) and sends rumble in the
+  receiver's format. The wheel reports like a pad: steering on the left stick, brake and gas on L2/R2. When the
+  controller leaves the receiver, its virtual pad goes and the receiver waits for the next. Built from the
+  descriptor and packets in the issue's probe log; not tested on the hardware yet.
+- Through a Mayflash MAGIC-S Pro2 the wheel cannot work: the adapter drops the wheel's reports itself. Plug the
+  receiver straight into the console.
+
 ## 2.0.0
 - **padbridge is now octet**: a name of its own for a payload built around the 8BitDo Ultimate 2C and the 8BitDo
   USB Wireless Adapter 2. The payloads are `octet-<version>.elf` and `octet-probe.elf`, notifications read "octet by

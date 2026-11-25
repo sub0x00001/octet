@@ -44,4 +44,9 @@ int usbpad_parse_8bitdo(const unsigned char *r, int n, pad_state *st);
 /* An XInput (Xbox 360) input report to a DualSense state. 0 if it is not one. */
 int usbpad_parse_xinput(const unsigned char *r, int n, pad_state *st);
 
+/* A packet of the Xbox 360 Wireless Receiver: XW_INPUT with *st updated, a
+ * controller joining or leaving the receiver, or XW_NONE for anything else. */
+enum { XW_NONE = 0, XW_INPUT, XW_JOINED, XW_LEFT };
+int usbpad_parse_xinput_wireless(const unsigned char *r, int n, pad_state *st);
+
 #endif

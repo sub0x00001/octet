@@ -13,6 +13,8 @@ enum {
     USBPAD_8BITDO,      /* 8BitDo DInput: HID report 1 (map8bitdo.c) */
     USBPAD_XINPUT,      /* Xbox 360 protocol, vendor interface ff/5d/01 (mapxinput.c) */
     USBPAD_SWITCH,      /* Nintendo Switch Pro Controller, 057e:2009 (mapswitch.c) */
+    USBPAD_XINPUT_WIRELESS, /* Xbox 360 Wireless Receiver, vendor interface ff/5d/81: its first
+                               controller (mapxinput.c) */
 };
 
 typedef struct {
@@ -26,8 +28,10 @@ typedef struct {
 
 /* Picks the interface to read:
  *   1. an XInput interface (class ff, subclass 5d, protocol 01), any vendor;
- *   2. a Switch Pro Controller (057e:2009): its HID interface;
- *   3. on an 8BitDo, the first HID interface that is not a boot keyboard or
+ *   2. an Xbox 360 Wireless Receiver's first controller (ff/5d/81), any vendor:
+ *      the receiver has one such interface per controller, up to four;
+ *   3. a Switch Pro Controller (057e:2009): its HID interface;
+ *   4. on an 8BitDo, the first HID interface that is not a boot keyboard or
  *      mouse (the 8BitDo 310a receiver also has a keyboard interface).
  * Each needs an interrupt IN endpoint. Returns the kind, USBPAD_NONE if none. */
 int usbdesc_choose(const unsigned char *cfg, int len, uint16_t vid, uint16_t pid, usbdesc_pick *out);
@@ -37,7 +41,8 @@ int usbdesc_choose(const unsigned char *cfg, int len, uint16_t vid, uint16_t pid
 int usbdesc_string(const unsigned char *d, int len, char *out, size_t size);
 
 /* The product's name, where its own is not: the 8BitDo USB Wireless Adapter 2
- * calls itself "8BitDo Receiver" or "Controller". NULL if none is known. */
+ * calls itself "8BitDo Receiver" or "Controller", clones of the Xbox 360
+ * Wireless Receiver have no name at all. NULL if none is known. */
 const char *usbdesc_known_name(uint16_t vid, uint16_t pid, const char *manufacturer);
 
 #endif
