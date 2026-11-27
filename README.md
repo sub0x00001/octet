@@ -64,11 +64,12 @@ light comes on once octet has it.
 
 | Controller | Result |
 |---|---|
-| Xbox 360 Wireless Controller | expected to work, untested: please report |
-| Xbox 360 Wireless Racing Wheel | expected to work, untested: steering on the left stick, brake and gas on L2/R2 |
+| Xbox 360 Wireless Controller | ✅ all buttons, **vibration** in PS4 games, View + Menu as the touchpad |
+| Xbox 360 Wireless Racing Wheel | ✅ steering on the left stick, brake and gas on L2/R2, every button; vibration, no force feedback; PS5 and PS4 games, PSVR included (Driveclub VR) |
 
-Only the receiver's **first controller** is read, for now: a second one paired with the same receiver does nothing.
-The wheel's force feedback is not sent; the rumble of a pad is, as for wired XInput.
+Tested with a `045e:02a9` receiver (issue #10). Only the receiver's **first controller** is read, for now: a second
+one paired with the same receiver keeps blinking all four lights and does nothing. Plug the receiver straight into
+the console: through a Mayflash MAGIC-S Pro2 the wheel sends nothing (the adapter drops its reports).
 
 ### Vibration
 
@@ -79,6 +80,7 @@ sends it on:
 | Controller | Rumbles |
 |---|---|
 | Ultimate 2C on its dongle | in XInput mode (tested) |
+| Xbox 360 Wireless Receiver (pad or Racing Wheel) | yes (tested; the wheel rumbles, it has no force feedback) |
 | Through the USB Wireless Adapter 2, Switch-type controllers (GameSir G8 tested, Switch Pro, Joy-Con) | with the adapter in its **Switch mode** (tested) |
 | Through the USB Wireless Adapter 2, PlayStation controllers (DualSense tested) | in XInput mode |
 

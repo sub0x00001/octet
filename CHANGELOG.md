@@ -7,8 +7,10 @@
   asks the receiver which controller is there, sets player 1's light (until then a paired controller blinks all four,
   as if it were not paired), reads its reports (the wired XInput report, 4 bytes on) and sends rumble in the
   receiver's format. The wheel reports like a pad: steering on the left stick, brake and gas on L2/R2. When the
-  controller leaves the receiver, its virtual pad goes and the receiver waits for the next. Built from the
-  descriptor and packets in the issue's probe log; not tested on the hardware yet.
+  controller leaves the receiver, its virtual pad goes and the receiver waits for the next. Tested by the issue's
+  reporter with a `045e:02a9` receiver: the Racing Wheel in PS5 and PS4 games (PSVR included, Driveclub VR), every
+  button, vibration (no force feedback), and an Xbox 360 Wireless Controller beside a DualSense.
+- Only the receiver's first controller is read: a second one on the same receiver keeps blinking.
 - Through a Mayflash MAGIC-S Pro2 the wheel cannot work: the adapter drops the wheel's reports itself. Plug the
   receiver straight into the console.
 
